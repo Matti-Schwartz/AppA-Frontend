@@ -1,0 +1,7 @@
+services:
+    web:
+        image: mattischwartz/appa-frontend:latest
+        build:
+            context: .
+        ports:
+            - "8081:8081"
