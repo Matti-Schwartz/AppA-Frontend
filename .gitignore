@@ -1,6 +1,6 @@
 HELP.md
+.ssh/operator
 target/
-.ssh/
 .terraform*
 terraform*
 !.mvn/wrapper/maven-wrapper.jar
