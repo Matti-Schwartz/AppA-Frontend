@@ -1,5 +1,8 @@
 HELP.md
 target/
+.ssh/
+.terraform*
+terraform*
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
