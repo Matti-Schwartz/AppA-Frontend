@@ -8,6 +8,9 @@ COPY src src
 
 RUN mkdir -p /usr/bin/mvn
 RUN chmod 777 /usr/bin/mvn
+RUN chmod 777 ./mvnw
+RUN chmod 777 ./pom.xml
+
 RUN ./mvnw install -DskipTests
 RUN mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
 
