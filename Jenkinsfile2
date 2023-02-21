@@ -3,10 +3,10 @@ pipeline {
 	stages {
 		stage ('Tooling versions') {
 			steps {
-				sh '''
-					docker --version
-					docker compose version
-				'''
+				sh 'docker --version'
+				sh 'docker compose version'
+				sh 'terraform --version'
+				sh 'ansible --version'
 			}
 		}
 		stage ('Build') {
@@ -16,11 +16,15 @@ pipeline {
 				sh 'docker compose push'
 			}
 		}
-		stage ('Deploy') {
+        stage ('Terraform') {
+            steps {
+				sh 'terraform init'
+                sh 'terraform apply -var \'sshPublicKeyPath=./.ssh/operator.pub\' --auto-approve'
+            }
+        }
+		stage ('Ansible') {
 			steps {
-				sh 'docker context use ecs-context'
-				sh 'docker compose up'
-				sh 'docker compose ps --format json'
+				
 			}
 		}
 	}
