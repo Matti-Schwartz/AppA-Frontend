@@ -22,10 +22,5 @@ pipeline {
                 sh 'terraform apply -var \'sshPublicKeyPath=./.ssh/operator.pub\' --auto-approve'
             }
         }
-		stage ('Ansible') {
-			steps {
-				
-			}
-		}
 	}
 }
