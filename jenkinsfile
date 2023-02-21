@@ -3,10 +3,10 @@ pipeline {
 	stages {
 		stage ('Tooling versions') {
 			steps {
-				sh '''
-					docker --version
-					docker compose version
-				'''
+				sh 'docker --version'
+				sh 'docker compose version'
+				sh 'terraform --version'
+				sh 'ansible --version'
 			}
 		}
 	}
