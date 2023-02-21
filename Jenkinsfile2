@@ -1,5 +1,8 @@
 pipeline {
 	agent any
+	environment {
+		DOCKER_HUB_CREDS = credentials('Docker-Hub-Creds-ms')
+	}
 	stages {
 		stage ('Tooling versions') {
 			steps {
