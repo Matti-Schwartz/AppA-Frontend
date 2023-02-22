@@ -1,5 +1,5 @@
 ---
-- hosts: all
+- hosts: servers
   become: true
   vars:
     container_count: 1
@@ -19,7 +19,7 @@
           - apt-transport-https
           - ca-certificates
           - curl
-          - software properties common
+          - software-properties-common
           - python3-pip
           - virtualenv
           - python3-setuptools
@@ -36,25 +36,25 @@
         repo: deb https://download.docker.com/linux/ubuntu focal stable
         state: present
 
-      - name: Update apt and install docker-ce
-        apt:
-          name: docker-ce
-          state: latest
-          update_cache: true
+    - name: Update apt and install docker-ce
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
 
-      - name: Install Docker Module for Python
-        pip:
-          name: docker
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
       
-      - name: Pull Docker Image
-        community.docker.docker_image:
+    - name: Pull Docker Image
+      community.docker.docker_image:
         name: "{{ default_container_image }}"
         source: pull
 
-      - name: Create container
-        community.docker.docker_container:
-          name: "{{ default_container_name }}"
-          image: "{{ default_container_image }}"
-          command: "{{ default_container_command }}"
-          state: present
-        with_sequence: count={{ container_count }}
+    - name: Create container
+      community.docker.docker_container:
+        name: "{{ default_container_name }}"
+        image: "{{ default_container_image }}"
+        command: "{{ default_container_command }}"
+        state: present
+      with_sequence: count={{ container_count }}
