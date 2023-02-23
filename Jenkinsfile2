@@ -1,10 +1,11 @@
+def dd_ip = ""
+
 pipeline {
 	agent any
 	environment {
 		DOCKER_HUB_CREDS = credentials('Docker-Hub-Creds-ms')
 	}
 	stages {
-		def dd_ip
 		stage ('Tooling versions') {
 			steps {
 				sh 'docker --version'
