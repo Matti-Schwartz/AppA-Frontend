@@ -1,5 +1,6 @@
 pipeline {
 	agent any
+	def dd_ip
 	environment {
 		DOCKER_HUB_CREDS = credentials('Docker-Hub-Creds-ms')
 	}
