@@ -18,8 +18,9 @@ pipeline {
             steps {
 				sh 'terraform init'
                 sh 'terraform apply -var \'sshPublicKeyPath=./.ssh/operator.pub\' --auto-approve'
-
-				dd_ip = sh(returnStdout: true, script: "terraform output publicIPv4").trim()
+				script {
+					dd_ip = sh(returnStdout: true, script: "terraform output publicIPv4").trim()
+				}
             }
         }
 		stage ('Ansible') {
