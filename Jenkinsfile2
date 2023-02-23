@@ -22,7 +22,7 @@ pipeline {
         }
 		stage ('Ansible') {
 			steps {
-				sh 'ansible-playbook playbook.yaml -e "HOSTS=${dd_ip}" -i ${dd_ip},'
+				sh """ansible-playbook playbook.yaml -e "HOSTS=${dd_ip}" -i ${dd_ip},"""
 			}
 		}
 	}
