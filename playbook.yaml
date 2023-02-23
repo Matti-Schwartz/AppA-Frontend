@@ -1,11 +1,11 @@
 ---
-- hosts: servers
+- name: Installation
+  hosts: "{{ HOSTS }}"
   become: true
   vars:
     container_count: 1
-    default_container_name: docker
-    default_container_image: ubuntu
-    default_container_command: sleep 1
+    default_container_name: appa_container
+    default_container_image: mattischwartz/appa-frontend:latest
   tasks:
     - name: Install aptitude
       apt:
@@ -55,6 +55,9 @@
       community.docker.docker_container:
         name: "{{ default_container_name }}"
         image: "{{ default_container_image }}"
-        command: "{{ default_container_command }}"
-        state: present
+        state: started
+        exposed_ports:
+        - "80"
+        ports:
+        - "80:8081"
       with_sequence: count={{ container_count }}
