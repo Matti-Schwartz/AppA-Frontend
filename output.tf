@@ -1,3 +1,3 @@
 output "publicIPv4" {
-  value = aws_t_instance.vm.public_ip
+  value = aws_instance.vm.public_ip
 }

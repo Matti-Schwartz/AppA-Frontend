@@ -3,7 +3,7 @@ resource "aws_key_pair" "ssh" {
 }
 
 
-resource "aws_t_instance" "vm" {
+resource "aws_instance" "vm" {
   instance_type = "t2.nano"
   ami = data.aws_ami.image.id
 
@@ -18,7 +18,6 @@ resource "aws_t_instance" "vm" {
     aws_security_group.allow-all-outbound.id
   ]
 }
-
 
 resource "aws_security_group" "allow-ssh-inbound" {
   ingress {
