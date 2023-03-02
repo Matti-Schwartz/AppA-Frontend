@@ -14,7 +14,15 @@ pipeline {
 				sh 'ansible --version'
 			}
 		}
-        stage ('Terraform') {
+		stage ('Build docker image') {
+			steps {
+				sh 'docker context use default'
+				sh 'docker compose build'
+				sh 'echo $DOCKER_HUB_CREDS_PSW | docker login -u $DOCKER_HUB_CREDS_USR --password-stdin'
+				sh 'docker compose push'
+			}
+		}
+        stage ('Instatiate instances') {
             steps {
 				sh 'terraform init'
 				sh 'terraform destroy -var \'sshPublicKeyPath=~/.ssh/.ssh/operator.pub\' --auto-approve'
@@ -24,7 +32,7 @@ pipeline {
 				}
             }
         }
-		stage ('Ansible') {
+		stage ('Install packages') {
 			steps {
 				sh """ansible-playbook playbook.yaml -e HOSTS=${aws_ip} -i ${aws_ip},"""
 			}
