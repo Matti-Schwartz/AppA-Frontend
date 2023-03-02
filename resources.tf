@@ -19,6 +19,7 @@ resource "aws_instance" "vm" {
   ]
 }
 
+
 resource "aws_security_group" "allow-ssh-inbound" {
   ingress {
     from_port = 22
