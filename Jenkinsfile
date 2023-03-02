@@ -34,6 +34,7 @@ pipeline {
         }
 		stage ('Install packages') {
 			steps {
+				sh """ansible all -i ${aws_ip}, -m ping"""
 				sh """ansible-playbook playbook.yaml -e HOSTS=${aws_ip} -i ${aws_ip},"""
 			}
 		}
