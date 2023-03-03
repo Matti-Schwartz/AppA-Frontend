@@ -25,8 +25,8 @@ pipeline {
         stage ('Instatiate instances') {
             steps {
 				sh 'terraform init'
-				sh 'terraform destroy -var \'sshPublicKeyPath=~/.ssh/operator.pub\' --auto-approve'
-                sh 'terraform apply -var \'sshPublicKeyPath=~/.ssh/operator.pub\' --auto-approve'
+				sh 'terraform destroy -var \'sshPublicKeyPath=~/.ssh/.ssh/operator.pub\' --auto-approve'
+                sh 'terraform apply -var \'sshPublicKeyPath=~/.ssh/.ssh/operator.pub\' --auto-approve'
 				script {
 					aws_ip = sh(returnStdout: true, script: "terraform output publicIPv4").trim()
 				}
