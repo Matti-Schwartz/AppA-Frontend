@@ -1,10 +1,10 @@
 # Devops-Test-Webapp
 
-A small Web-Application a simple backend created with **Java-Spring-Boot** and **MySQL** to store the user data. This project is a test and learn project for *Devops* topics like: create a full automated build and deploy pipeline. So the focus of this project lies on the devops pipeline which consists of the toolchain, which is discribed in the next section.
+A small Web-Application created with **Java-Spring-Boot**, which just prints a *String* as landingpage. This project is a test and learn project for *Devops* topics like: create a full automated build and deploy pipeline. So the focus of this project lies on the devops pipeline which consists of the toolchain, which is discribed in the next section.
 
 ## Toolchain
 
-The following section describes all the tools which are used to create the pipeline.
+The following section briefly describes all the tools which are used to create the pipeline.
 
 - Jenkins
 
@@ -12,15 +12,15 @@ The following section describes all the tools which are used to create the pipel
 
 - Docker / Docker-Compose
 
-    Creates the *Container-Image* for the Web-App from the source code in this repository which bases on the official Java-Image: **eclipse-temurin:17-jdk-alpine**. It also defines the Image for the MySQL-Database which uses the official MySQL-Image: **mysql:8**.
+    Creates the *Container-Image* for the Web-App from the source code in this repository which bases on the official Java-Image: **eclipse-temurin:17-jdk-alpine**.
 
 - Terraform
 
-    Instantiates and configurates the **AWS EC2-Instances**. After the initialization, Terraform outputs the Ip-Addresses, to use them later.
+    Instantiates and configurates the **AWS EC2-Instance**. After the initialization, Terraform outputs the Ip-Address, to use them later.
 
 - Ansible
 
-    Installs the all packages to run Docker-Container on the instances. Also install or rather pull the Docker-Images of this Web-App from *Dockerhub* and starts the container on the instances.
+    Installs all packages to run a *Docker-Container* on the instance. Also install or rather pull the Docker-Images of this Web-App from *Dockerhub* and starts the container on the instances.
 
 ## Jenkins
 
@@ -39,7 +39,7 @@ stage ('Tooling versions') {
 }
 ```
 
-In the second stage creates *Docker* the image for the Webapp. The first step is to ensure that the default *Docker Context* is used. After this, *Docker Compose* builds the image. To make the accessable on the aws-ec2-instance which will be created in the next stage, the newly created image gets pushed to **Dockerhub**.
+In the second stage creates *Docker* the image for the Web-App. The first step is to ensure that the default *Docker Context* is used. After this, *Docker Compose* builds the image. To make the accessable on the aws-ec2-instance which will be created in the next stage, the newly created image gets pushed to **Dockerhub**.
 
 ``` groovy
 stage ('Build docker image') {
@@ -48,7 +48,7 @@ stage ('Build docker image') {
 		sh 'docker compose build'
 		sh 'echo $DOCKER_HUB_CREDS_PSW | docker login -u $DOCKER_HUB_CREDS_USR --password-stdin'
 		sh 'docker compose push'
-    }
+  }
 }
 ```
 
@@ -56,14 +56,14 @@ In the next stage, the aws-ec2-instance will be created with *Terraform*. Firstl
 
 ``` groovy
 stage ('Instatiate instances') {
-    steps {
-    	sh 'terraform init'
-		sh 'terraform destroy -var \'sshPublicKeyPath=~/.ssh/operator.pub\' --auto-approve'
-        sh 'terraform apply -var \'sshPublicKeyPath=~/.ssh/operator.pub\' --auto-approve'
-		script {
-			aws_ip = sh(returnStdout: true, script: "terraform output publicIPv4").trim()
+  steps {
+   	sh 'terraform init'
+	  sh 'terraform destroy -var \'sshPublicKeyPath=~/.ssh/operator.pub\' --auto-approve'
+    sh 'terraform apply -var \'sshPublicKeyPath=~/.ssh/operator.pub\' --auto-approve'
+	  script {
+		  aws_ip = sh(returnStdout: true, script: "terraform output publicIPv4").trim()
 		}
-    }
+  }
 }
 ```
 
@@ -77,9 +77,117 @@ stage ('Install packages') {
 }
 ```
 
+## Docker / Docker-Compose
+
+For the build stage, *Docker Compose* is used. It uses the **compose.yaml** to create the container-image and exposes the ports of the image.
+
+``` yaml
+services:
+    web:
+        image: mattischwartz/appa-frontend:latest
+        build:
+            context: .
+        ports:
+            - "8081:8081"
+```
+
+The following **Dockerfile** creates the image which will later be used, for the deployment on the instance. It build on the *eclipse-temurin:17-jdk-alpine* image and run the *Maven* commands to compile the application *Jar*.
+
+``` dockerfile
+FROM eclipse-temurin:17-jdk-alpine as build
+WORKDIR /workspace/app
+
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
+COPY src src
+
+RUN chmod 777 ./mvnw
+
+RUN ./mvnw install -DskipTests
+RUN mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
+
+FROM eclipse-temurin:17-jdk-alpine
+VOLUME /tmp
+ARG DEPENDENCY=/workspace/app/target/dependency
+COPY --from=build ${DEPENDENCY}/BOOT-INF/lib /app/lib
+COPY --from=build ${DEPENDENCY}/META-INF /app/META-INF
+COPY --from=build ${DEPENDENCY}/BOOT-INF/classes /app
+ENTRYPOINT ["java", "-cp", "app:app/lib/*", "com.appa.appafrontend.AppaFrontendApplication"]
+```
+
+## Terraform
+
+The first part to use *Terraform* for resource allocation is that terraform need the, in this case *AWS* credentials and config.
+
+```
+provider "aws" {
+  shared_config_files      = ["~/.aws/config"]
+  shared_credentials_files = ["~/.aws/credentials"]
+  profile                  = "default"
+}
+```
+
+The following snippet describes an aws-ec2-instance. Importent is the *instance_type* which defines which type of instance should be allocated and how much ressourcen are available. More infos: https://aws.amazon.com/de/ec2/pricing/on-demand/. It also describes the firewall settings for traffic, from and to the instance.
+
+```
+resource "aws_instance" "vm" {
+  instance_type = "t2.nano"
+  ami = data.aws_ami.image.id
+
+  key_name = aws_key_pair.ssh.key_name
+
+  associate_public_ip_address = true
+
+  vpc_security_group_ids = [
+    aws_security_group.allow-ssh-inbound.id,
+    aws_security_group.allow-http-inbound.id,
+    aws_security_group.allow-https-inbound.id,
+    aws_security_group.allow-all-outbound.id
+  ]
+}
+```
+
+The snippet above describes resource aspect and the next snippet describes the software aspects. It defines which system should run on the instance, in this case *Ubuntu v. 20.04* and an *x86_64* architecture.
+
+```
+data "aws_ami" "image" {
+  most_recent = true
+
+  owners = ["amazon"]
+
+  filter {
+    name = "name"
+    values = [
+      "*Ubuntu*",
+    ]
+  }
+
+  filter {
+    name = "name"
+    values = ["*20.04*"]
+  }
+
+  filter {
+    name = "name"
+    values = ["*Express*"]
+  }
+
+  filter {
+    name = "architecture"
+    values = ["x86_64"]
+  }
+
+  filter {
+    name = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+```
+
 ## Ansible-Playbook
 
-In this section we will look at the **playbook.yaml** whoich is used in the last stage of the pipeline.
+In this section we will look at the **playbook.yaml** which is used in the last stage of the pipeline.
 
 At the beginning, there are a few settings. Firstly a name, not so importent. The second variable is the *host* on which this playbook would be executed. In this case it is an parameter which ansible gets from terraform, this is described in the previous section. The third variable is for the priviledge escalation, means this will be executed as user with *sudo* permissions. After this a few variables which are used later in the script are defined. The *default_container_name* is the name of the docker container which will be created in this script. The second var *default_container_image* is the name of the image from which the container should be created.
 
@@ -88,7 +196,6 @@ At the beginning, there are a few settings. Firstly a name, not so importent. Th
   hosts: "{{ HOSTS }}"
   become: true
   vars:
-    container_count: 1
     default_container_name: appa_container
     default_container_image: mattischwartz/appa-frontend:latest
 ```
@@ -161,7 +268,6 @@ Last but not least, the container will be created from the image and the ports w
         - "80"
         ports:
         - "80:8081"
-      with_sequence: count={{ container_count }}
 ```
 
 ---
@@ -173,4 +279,4 @@ Last but not least, the container will be created from the image and the ports w
 
 - Digital Ocean
 
-  As jenkins build server, to make jenkins reachable via the internet. This is required to use GitHub-Webhooks. Which can be used to trigger the build pipeline vie a *git push* on the specified branch.
+  As jenkins build server, to make jenkins reachable via the internet. This is required to use GitHub-Webhooks. Which will be used to trigger the build pipeline via a *git push* on the specified branch.
